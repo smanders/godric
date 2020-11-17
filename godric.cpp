@@ -67,8 +67,18 @@ void godric::OnInitCmdLine(wxCmdLineParser& rParser)
   static const wxCmdLineEntryDesc cmdLineDesc[] = {
     // Add command line switches, options, and parameters here.
     // See wxCmdLineParser for details.
-    {wxCMD_LINE_OPTION, "i", "input", "input directory", wxCMD_LINE_VAL_NONE, 0},
-    {wxCMD_LINE_OPTION, "o", "output", "output directory", wxCMD_LINE_VAL_NONE, 0},
+    {wxCMD_LINE_OPTION,
+     "i",
+     "input",
+     "input directory",
+     wxCMD_LINE_VAL_NONE,
+     0},
+    {wxCMD_LINE_OPTION,
+     "o",
+     "output",
+     "output directory",
+     wxCMD_LINE_VAL_NONE,
+     0},
     {wxCMD_LINE_NONE,
      nullptr,
      nullptr,
@@ -92,9 +102,9 @@ bool godric::OnCmdLineParsed(wxCmdLineParser& rParser)
   if (!rParser.Found("input", &input) && !wxFileName::DirExists(input))
   {
     wxDirDialog open(GetTopWindow(),
-                    "Choose input directory",
-                    wxEmptyString,
-                    wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+                     "Choose input directory",
+                     wxEmptyString,
+                     wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
     if (wxID_OK != open.ShowModal()) return false;
     input = open.GetPath();
   }
@@ -107,9 +117,9 @@ bool godric::OnCmdLineParsed(wxCmdLineParser& rParser)
   if (!rParser.Found("output", &output))
   {
     wxDirDialog save(GetTopWindow(),
-                    "Choose output directory",
-                    wxEmptyString,
-                    wxDD_DEFAULT_STYLE);
+                     "Choose output directory",
+                     wxEmptyString,
+                     wxDD_DEFAULT_STYLE);
     if (wxID_OK != save.ShowModal()) return false;
     output = save.GetPath();
   }
@@ -135,7 +145,7 @@ void godric::execute()
 {
   namespace bfs = boost::filesystem;
   bfs::create_directories(m_outputDir);
-  for(auto& p : bfs::directory_iterator(m_inputDir))
+  for (auto& p : bfs::directory_iterator(m_inputDir))
   {
     std::vector<std::string> tokens;
     std::stringstream f(p.path().filename().string().c_str());
