@@ -21,3 +21,6 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_hrc)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}) # hrcResources
 target_link_libraries(${PROJECT_NAME} PRIVATE Boost::filesystem wx::core)
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
+xpSourceDirIgnore(cmake)
+xpSourceDirIgnore(test)
+xpSourceListAppend("godric.cpp")
