@@ -462,7 +462,10 @@ void godricFrame::execute()
         }
       }
     }
+    auto inputdir = m_pInputDir->GetPath();
     m_pInputDir->ReCreateTree();
+    m_pInputDir->SetPath(inputdir);
+    m_pOutputDir->SetDirectory(m_pOutputDir->GetDirectory());
     populateDirectoryList();
   }
   catch (...)
