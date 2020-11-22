@@ -14,6 +14,7 @@
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
 #include <wx/stattext.h>
+#include <wx/textctrl.h>
 #include <wx/tglbtn.h> // for wxEVT_COMMAND_TOGGLEBUTTON_CLICKED
 #include <wx/things/toggle.h>
 
@@ -60,6 +61,7 @@ private:
   wxFileCtrl* m_pOutputDir;
   wxCustomButton* m_pBtnFilter;
   wxSpinCtrl* m_pDelimNum;
+  wxTextCtrl* m_pTxtFilter;
 };
 
 /** Application instance implementation */
@@ -108,7 +110,8 @@ godricFrame::godricFrame(wxWindow* pParent)
     m_pListBox(nullptr),
     m_pOutputDir(nullptr),
     m_pBtnFilter(nullptr),
-    m_pDelimNum(nullptr)
+    m_pDelimNum(nullptr),
+    m_pTxtFilter(nullptr)
 {
   init();
   create();
@@ -348,6 +351,17 @@ wxPanel* godricFrame::createToolbarFilter()
   Bind(wxEVT_SPINCTRL,
        [=](wxSpinEvent&) { populateDirectoryList(); },
        m_pDelimNum->GetId());
+
+  // filter string
+  m_pTxtFilter = new wxTextCtrl(pPanel,
+                                wxID_ANY,
+                                "%1_/_%2_4$_/_%0_%1_%2_%3",
+                                wxDefaultPosition,
+                                wxSize(500, -1));
+  m_pTxtFilter->SetToolTip("filter string");
+  pSizer->Add(m_pTxtFilter, szrFlags);
+  Bind(
+    wxEVT_TEXT, [=](wxCommandEvent&) { setStatus(); }, m_pTxtFilter->GetId());
 
   pSizer->SetSizeHints(pPanel);
   return pPanel;
