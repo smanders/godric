@@ -439,7 +439,7 @@ boost::filesystem::path godricFrame::filterFile(
 {
   std::vector<std::string> fields;
   std::string filename(file.filename().string());
-  boost::split(fields, filename, [](char c) { return c == '_'; });
+  boost::split(fields, filename, boost::algorithm::is_any_of("_"));
   boost::filesystem::path output;
   if (m_pDelimNum->GetValue() == static_cast<int>(fields.size()))
   {
