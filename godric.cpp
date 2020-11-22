@@ -279,7 +279,7 @@ wxPanel* godricFrame::createToolbarDir()
   const wxSize BTNSIZE(42, 42);
   const long TGLSTYLE = wxCUSTBUT_TOGGLE | wxCUSTBUT_FLAT;
   wxSizerFlags szrFlags;
-  szrFlags.Proportion(0).Border(wxALL, 2).Align(wxALIGN_CENTER);
+  szrFlags.Proportion(0).Border(wxALL, 2).Center();
 
   // directory button
   auto pBtnDir = new wxCustomButton(
@@ -318,7 +318,7 @@ wxPanel* godricFrame::createToolbarFilter()
   const wxSize BTNSIZE(42, 42);
   const long TGLSTYLE = wxCUSTBUT_TOGGLE | wxCUSTBUT_FLAT;
   wxSizerFlags szrFlags;
-  szrFlags.Proportion(0).Border(wxALL, 2).Align(wxALIGN_CENTER);
+  szrFlags.Proportion(0).Border(wxALL, 2).Center();
 
   // filter button
   m_pBtnFilter = new wxCustomButton(
@@ -365,7 +365,7 @@ wxPanel* godricFrame::createToolbarRun()
   const wxSize BTNSIZE(42, 42);
   const long BTNSTYLE = wxCUSTBUT_BUTTON | wxCUSTBUT_FLAT;
   wxSizerFlags szrFlags;
-  szrFlags.Proportion(0).Border(wxALL, 2).Align(wxALIGN_CENTER);
+  szrFlags.Proportion(0).Border(wxALL, 2).Center();
 
   // run button
   auto pBtnRun = new wxCustomButton(
