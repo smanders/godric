@@ -337,20 +337,17 @@ wxPanel* godricFrame::createToolbarFilter()
        m_pBtnFilter->GetId());
 
   // delimiters
-  auto pDelimTxt = new wxStaticText(pPanel, wxID_STATIC, "Delimiter _");
+  auto pDelimTxt = new wxStaticText(pPanel, wxID_STATIC, "Delimiter '_'");
   pDelimTxt->SetToolTip("delimiter that separates fields");
+  pSizer->Add(pDelimTxt, szrFlags);
 
   m_pDelimNum =
     new wxSpinCtrl(pPanel, wxID_ANY, "4", wxDefaultPosition, wxSize(60, -1));
   m_pDelimNum->SetToolTip("number of delimiters in filenames");
+  pSizer->Add(m_pDelimNum, szrFlags);
   Bind(wxEVT_SPINCTRL,
        [=](wxSpinEvent&) { populateDirectoryList(); },
        m_pDelimNum->GetId());
-
-  wxSizerFlags sf;
-  sf.Center().Border(wxALL, 2);
-  pSizer->Add(pDelimTxt, sf);
-  pSizer->Add(m_pDelimNum, sf);
 
   pSizer->SetSizeHints(pPanel);
   return pPanel;
