@@ -1,5 +1,5 @@
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <wx/app.h>
@@ -426,18 +426,14 @@ void godricFrame::populateDirectoryList()
 boost::filesystem::path godricFrame::filterFile(
   const boost::filesystem::path& file)
 {
-  std::vector<std::string> tokens;
-  std::stringstream f(file.filename().string().c_str());
-  std::string tok;
-  while (getline(f, tok, '_'))
-  {
-    tokens.push_back(tok);
-  }
+  std::vector<std::string> fields;
+  std::string filename(file.filename().string());
+  boost::split(fields, filename, [](char c) { return c == '_'; });
   boost::filesystem::path output;
-  if (m_pDelimNum->GetValue() == static_cast<int>(tokens.size()))
+  if (m_pDelimNum->GetValue() == static_cast<int>(fields.size()))
   {
-    auto year = tokens[2].substr(tokens[2].length() - 4);
-    output = boost::filesystem::path(tokens[1]) / year / file.filename();
+    auto year = fields[2].substr(fields[2].length() - 4);
+    output = boost::filesystem::path(fields[1]) / year / file.filename();
   }
   return output;
 }
