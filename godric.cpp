@@ -344,8 +344,14 @@ wxPanel* godricFrame::createToolbarFilter()
   pDelimTxt->SetToolTip("delimiter that separates fields");
   pSizer->Add(pDelimTxt, szrFlags);
 
-  m_pDelimNum =
-    new wxSpinCtrl(pPanel, wxID_ANY, "4", wxDefaultPosition, wxSize(60, -1));
+  m_pDelimNum = new wxSpinCtrl(pPanel,
+                               wxID_ANY,
+                               "4",
+                               wxDefaultPosition,
+                               wxSize(35, -1),
+                               wxSP_ARROW_KEYS | wxSP_WRAP,
+                               /*min=*/1,
+                               /*max=*/9);
   m_pDelimNum->SetToolTip("number of delimiters in filenames");
   pSizer->Add(m_pDelimNum, szrFlags);
   Bind(wxEVT_SPINCTRL,
