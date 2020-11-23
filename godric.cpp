@@ -60,7 +60,7 @@ private:
   wxListBox* m_pListBox;
   wxFileCtrl* m_pOutputDir;
   wxCustomButton* m_pBtnFilter;
-  wxSpinCtrl* m_pDelimNum;
+  wxSpinCtrl* m_pFieldNum;
   wxTextCtrl* m_pTxtFilter;
 };
 
@@ -110,7 +110,7 @@ godricFrame::godricFrame(wxWindow* pParent)
     m_pListBox(nullptr),
     m_pOutputDir(nullptr),
     m_pBtnFilter(nullptr),
-    m_pDelimNum(nullptr),
+    m_pFieldNum(nullptr),
     m_pTxtFilter(nullptr)
 {
   init();
@@ -344,7 +344,7 @@ wxPanel* godricFrame::createToolbarFilter()
   pDelimTxt->SetToolTip("delimiter that separates fields");
   pSizer->Add(pDelimTxt, szrFlags);
 
-  m_pDelimNum = new wxSpinCtrl(pPanel,
+  m_pFieldNum = new wxSpinCtrl(pPanel,
                                wxID_ANY,
                                "4",
                                wxDefaultPosition,
@@ -352,11 +352,12 @@ wxPanel* godricFrame::createToolbarFilter()
                                wxSP_ARROW_KEYS | wxSP_WRAP,
                                /*min=*/1,
                                /*max=*/9);
-  m_pDelimNum->SetToolTip("number of delimiters in filenames");
-  pSizer->Add(m_pDelimNum, szrFlags);
+  m_pFieldNum->SetToolTip(
+    "number of fields (separated by delimiters) in filenames");
+  pSizer->Add(m_pFieldNum, szrFlags);
   Bind(wxEVT_SPINCTRL,
        [=](wxSpinEvent&) { populateDirectoryList(); },
-       m_pDelimNum->GetId());
+       m_pFieldNum->GetId());
 
   // filter string
   m_pTxtFilter = new wxTextCtrl(pPanel,
@@ -458,7 +459,7 @@ boost::filesystem::path godricFrame::filterFile(
   boost::filesystem::path output;
   try
   {
-    if (m_pDelimNum->GetValue() == static_cast<int>(fields.size()))
+    if (m_pFieldNum->GetValue() == static_cast<int>(fields.size()))
     {
       std::vector<std::string> formats, parts;
       std::string formatString(m_pTxtFilter->GetValue());
