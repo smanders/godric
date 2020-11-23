@@ -1,5 +1,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+#include <sstream>
 #include <string>
 #include <vector>
 #include <wx/app.h>
