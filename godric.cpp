@@ -466,42 +466,41 @@ boost::filesystem::path godricFrame::filterFile(
       std::string formatString(m_pTxtFilter->GetValue());
       boost::split(formats, formatString, boost::algorithm::is_any_of(":"));
       std::string part;
-      std::for_each(
-        formats.begin(), formats.end(), [&](const std::string& fmt) {
-          switch (fmt[0])
+      for (const auto& fmt : formats)
+      {
+        switch (fmt[0])
+        {
+        case '%':
+          part += fields.at(ctoi(fmt, 1));
+          break;
+        case '$':
+          if ('%' == fmt[2])
           {
-          case '%':
-            part += fields.at(ctoi(fmt, 1));
-            break;
-          case '$':
-            if ('%' == fmt[2])
-            {
-              auto end = ctoi(fmt, 1);
-              auto str = fields.at(ctoi(fmt, 3));
-              part += str.substr(str.length() - end);
-            }
-            break;
-          case '^':
-            if ('%' == fmt[2])
-            {
-              auto beg = ctoi(fmt, 1);
-              auto str = fields.at(ctoi(fmt, 3));
-              part += str.substr(0, beg);
-            }
-            break;
-          case '_':
-            part += "_";
-            break;
-          case '/':
-            parts.push_back(part);
-            part.clear();
-            break;
+            auto end = ctoi(fmt, 1);
+            auto str = fields.at(ctoi(fmt, 3));
+            part += str.substr(str.length() - end);
           }
-        });
+          break;
+        case '^':
+          if ('%' == fmt[2])
+          {
+            auto beg = ctoi(fmt, 1);
+            auto str = fields.at(ctoi(fmt, 3));
+            part += str.substr(0, beg);
+          }
+          break;
+        case '_':
+          part += "_";
+          break;
+        case '/':
+          parts.push_back(part);
+          part.clear();
+          break;
+        }
+      }
       if (!part.empty()) parts.push_back(part);
-      std::for_each(parts.begin(),
-                    parts.end(),
-                    [&output](const std::string& part) { output /= part; });
+      for (const auto& part : parts)
+        output /= part;
     }
   }
   catch (...)
