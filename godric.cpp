@@ -363,7 +363,7 @@ wxPanel* godricFrame::createToolbarFilter()
   // filter string
   m_pTxtFilter = new wxTextCtrl(pPanel,
                                 wxID_ANY,
-                                "%1:/:$4%2:/:%0:_:%1:_:%2:_:%3",
+                                "%1:/:$4%2:/:$4%2:_:%1:_:%3",
                                 wxDefaultPosition,
                                 wxSize(500, -1));
   m_pTxtFilter->SetToolTip("filter string");
