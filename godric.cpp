@@ -361,7 +361,7 @@ wxPanel* godricFrame::createToolbarFilter()
   // filter string
   m_pTxtFilter = new wxTextCtrl(pPanel,
                                 wxID_ANY,
-                                "%1_/_%2_4$_/_%0_%1_%2_%3",
+                                "%1:/:$4%2:/:%0:_:%1:_:%2:_:%3",
                                 wxDefaultPosition,
                                 wxSize(500, -1));
   m_pTxtFilter->SetToolTip("filter string");
@@ -440,17 +440,70 @@ void godricFrame::populateDirectoryList()
   }
 }
 
+int ctoi(const std::string& fmt, int offset)
+{
+  int ret;
+  std::stringstream s;
+  s << fmt[offset];
+  s >> ret;
+  return ret;
+}
+
 boost::filesystem::path godricFrame::filterFile(
   const boost::filesystem::path& file)
 {
   std::vector<std::string> fields;
-  std::string filename(file.filename().string());
-  boost::split(fields, filename, boost::algorithm::is_any_of("_"));
+  boost::split(
+    fields, file.filename().string(), boost::algorithm::is_any_of("_"));
   boost::filesystem::path output;
-  if (m_pDelimNum->GetValue() == static_cast<int>(fields.size()))
+  try
   {
-    auto year = fields[2].substr(fields[2].length() - 4);
-    output = boost::filesystem::path(fields[1]) / year / file.filename();
+    if (m_pDelimNum->GetValue() == static_cast<int>(fields.size()))
+    {
+      std::vector<std::string> formats, parts;
+      std::string formatString(m_pTxtFilter->GetValue());
+      boost::split(formats, formatString, boost::algorithm::is_any_of(":"));
+      std::string part;
+      std::for_each(
+        formats.begin(), formats.end(), [&](const std::string& fmt) {
+          switch (fmt[0])
+          {
+          case '%':
+            part += fields.at(ctoi(fmt, 1));
+            break;
+          case '$':
+            if ('%' == fmt[2])
+            {
+              auto end = ctoi(fmt, 1);
+              auto str = fields.at(ctoi(fmt, 3));
+              part += str.substr(str.length() - end);
+            }
+            break;
+          case '^':
+            if ('%' == fmt[2])
+            {
+              auto beg = ctoi(fmt, 1);
+              auto str = fields.at(ctoi(fmt, 3));
+              part += str.substr(0, beg);
+            }
+            break;
+          case '_':
+            part += "_";
+            break;
+          case '/':
+            parts.push_back(part);
+            part.clear();
+            break;
+          }
+        });
+      if (!part.empty()) parts.push_back(part);
+      std::for_each(parts.begin(),
+                    parts.end(),
+                    [&output](const std::string& part) { output /= part; });
+    }
+  }
+  catch (...)
+  {
   }
   return output;
 }
