@@ -6,9 +6,9 @@ url=https://www2.census.gov/topics/genealogy/1990surnames
 [ ! -f names_last.txt ] && wget -qO- ${url}/dist.all.last | awk '{print $1}' > names_last.txt
 function getName()
 {
-  female=`sort --random-sort names_female.txt | head -n 1`
-  male=`sort --random-sort names_male.txt | head -n 1`
-  last=`sort --random-sort names_last.txt | head -n 1`
+  female=`shuf -n 1 names_female.txt`
+  male=`shuf -n 1 names_male.txt`
+  last=`shuf -n 1 names_last.txt`
   fini="$(echo ${female} | head -c 1)"
   mini="$(echo ${male} | head -c 1)"
   local name="${last}${mini}${fini}_${last}, ${male} & ${female}"
