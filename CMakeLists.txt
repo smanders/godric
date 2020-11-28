@@ -20,7 +20,6 @@ set(resources_srcs
   resources/filter_add.png
   resources/filter_delete.png
   resources/folder_download.png
-  resources/folder_upload.png
   )
 list(APPEND ${PROJECT_NAME}_srcs ${resources_srcs})
 xpCreateHeaderResource(hrcResources ${resources_srcs})

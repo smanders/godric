@@ -8,7 +8,6 @@
 #include <wx/config.h>
 #include <wx/dirctrl.h>
 #include <wx/display.h>
-#include <wx/filectrl.h>
 #include <wx/frame.h>
 #include <wx/listbox.h>
 #include <wx/panel.h>
@@ -23,7 +22,6 @@
 #include "Resources/filter_add.hrc"
 #include "Resources/filter_delete.hrc"
 #include "Resources/folder_download.hrc"
-#include "Resources/folder_upload.hrc"
 
 class godricApp : public wxApp
 {
@@ -47,9 +45,7 @@ private:
   godricFrame() = delete; // No support for two-step construction
   void init();
   bool create();
-  wxPanel* createToolbarDir();
-  wxPanel* createToolbarFilter();
-  wxPanel* createToolbarRun();
+  wxPanel* createToolbar();
   void setStatus();
   void populateDirectoryList();
   boost::filesystem::path filterFile(const boost::filesystem::path& file);
@@ -59,7 +55,7 @@ private:
   wxAuiManager* m_pAui;
   wxGenericDirCtrl* m_pInputDir;
   wxListBox* m_pListBox;
-  wxFileCtrl* m_pOutputDir;
+  wxTextCtrl* m_pOutputDir;
   wxCustomButton* m_pBtnFilter;
   wxSpinCtrl* m_pFieldNum;
   wxTextCtrl* m_pTxtFilter;
@@ -103,7 +99,7 @@ godricFrame::godricFrame(wxWindow* pParent)
             wxID_ANY,
             wxEmptyString,
             wxDefaultPosition,
-            wxSize(600, 750),
+            wxSize(850, 750),
             wxCAPTION | wxRESIZE_BORDER | wxSYSTEM_MENU | wxMINIMIZE_BOX |
               wxMAXIMIZE_BOX | wxCLOSE_BOX),
     m_pAui(nullptr),
@@ -124,7 +120,7 @@ godricFrame::~godricFrame()
   // store the directories
   pCfg->SetPath("/Directories");
   pCfg->Write("input", m_pInputDir->GetPath());
-  pCfg->Write("output", m_pOutputDir->GetDirectory());
+  pCfg->Write("output", m_pOutputDir->GetValue());
   // store the position and size
   if (IsMaximized() || IsIconized()) Iconize(false);
   pCfg->SetPath("/Geometry");
@@ -150,7 +146,7 @@ void godricFrame::init()
 
   // size and position
   pCfg->SetPath("/Geometry");
-  wxRect defaultRect(0, 0, 800, 600);
+  wxRect defaultRect(wxDefaultPosition, GetSize());
   long size = pCfg->Read("size", defaultRect.width << 16 | defaultRect.height);
   long pos = pCfg->Read("pos", defaultRect.x << 16 | defaultRect.y);
   wxRect configRect;
@@ -226,40 +222,17 @@ bool godricFrame::create()
     m_pListBox,
     wxAuiPaneInfo().Name("listbox").Center().Layer(0).CloseButton(false));
 
-  // output directory
-  pCfg->SetPath("/Directories");
-  m_pOutputDir = new wxFileCtrl(this,
-                                wxID_ANY,
-                                pCfg->Read("output", wxEmptyString),
-                                wxEmptyString,
-                                wxEmptyString,
-                                wxFC_SAVE);
-  m_pAui->AddPane(m_pOutputDir,
+  // toolbar
+  m_pAui->AddPane(createToolbar(),
                   wxAuiPaneInfo()
-                    .Name("outputdir")
-                    .Caption("output directory")
-                    .Center()
-                    .Layer(0)
-                    .CloseButton(false)
-                    .Hide());
-
-  // toolbar pane info
-  wxAuiPaneInfo tbpi;
-  tbpi.ToolbarPane().Top();
-  tbpi.LeftDockable(false);
-  tbpi.RightDockable(false);
-  tbpi.BottomDockable(false);
-  tbpi.Floatable(false);
-  tbpi.Row(1);
-  // directory toolbar
-  tbpi.Name("ToolbarDir");
-  m_pAui->AddPane(createToolbarDir(), tbpi);
-  // directory filter
-  tbpi.Name("ToolbarFilter");
-  m_pAui->AddPane(createToolbarFilter(), tbpi);
-  // run toolbar
-  tbpi.Name("ToolbarRun");
-  m_pAui->AddPane(createToolbarRun(), tbpi.Hide());
+                    .ToolbarPane()
+                    .Top()
+                    .Name("Toolbar")
+                    .LeftDockable(false)
+                    .RightDockable(false)
+                    .BottomDockable(false)
+                    .Floatable(false)
+                    .Row(1));
 
   // "commit" all changes made to wxAuiManager
   m_pAui->Update();
@@ -274,52 +247,14 @@ bool godricFrame::create()
   return true;
 }
 
-wxPanel* godricFrame::createToolbarDir()
+wxPanel* godricFrame::createToolbar()
 {
   auto pPanel = new wxPanel(this, wxID_ANY);
   auto pSizer = new wxBoxSizer(wxHORIZONTAL);
   pPanel->SetSizer(pSizer);
 
   const wxSize BTNSIZE(42, 42);
-  const long TGLSTYLE = wxCUSTBUT_TOGGLE | wxCUSTBUT_FLAT;
-  wxSizerFlags szrFlags;
-  szrFlags.Proportion(0).Border(wxALL, 2).Center();
-
-  // directory button
-  auto pBtnDir = new wxCustomButton(
-    pPanel,
-    wxID_ANY,
-    wxBitmap::NewFromPNGData(folder_upload_png, WXSIZEOF(folder_upload_png)),
-    wxDefaultPosition,
-    BTNSIZE,
-    TGLSTYLE);
-  pBtnDir->SetToolTip("toggle input/output directory");
-  pBtnDir->SetBitmapSelected(wxBitmap::NewFromPNGData(
-    folder_download_png, WXSIZEOF(folder_download_png)));
-  pSizer->Add(pBtnDir, szrFlags);
-  Bind(wxEVT_COMMAND_TOGGLEBUTTON_CLICKED,
-       [=](wxCommandEvent& rEvent) {
-         m_pAui->GetPane("inputdir").Show(!rEvent.IsChecked());
-         m_pAui->GetPane("listbox").Show(!rEvent.IsChecked());
-         m_pAui->GetPane("ToolbarFilter").Show(!rEvent.IsChecked());
-         m_pAui->GetPane("outputdir").Show(rEvent.IsChecked());
-         m_pAui->GetPane("ToolbarRun").Show(rEvent.IsChecked());
-         m_pAui->Update();
-         setStatus();
-       },
-       pBtnDir->GetId());
-
-  pSizer->SetSizeHints(pPanel);
-  return pPanel;
-}
-
-wxPanel* godricFrame::createToolbarFilter()
-{
-  auto pPanel = new wxPanel(this, wxID_ANY);
-  auto pSizer = new wxBoxSizer(wxHORIZONTAL);
-  pPanel->SetSizer(pSizer);
-
-  const wxSize BTNSIZE(42, 42);
+  const long BTNSTYLE = wxCUSTBUT_BUTTON | wxCUSTBUT_FLAT;
   const long TGLSTYLE = wxCUSTBUT_TOGGLE | wxCUSTBUT_FLAT;
   wxSizerFlags szrFlags;
   szrFlags.Proportion(0).Border(wxALL, 2).Center();
@@ -365,26 +300,44 @@ wxPanel* godricFrame::createToolbarFilter()
                                 wxID_ANY,
                                 "%1:/:$4%2:/:$4%2:_:%1:_:%3",
                                 wxDefaultPosition,
-                                wxSize(500, -1));
+                                wxSize(250, -1));
   m_pTxtFilter->SetToolTip("filter string");
   pSizer->Add(m_pTxtFilter, szrFlags);
   Bind(
     wxEVT_TEXT, [=](wxCommandEvent&) { setStatus(); }, m_pTxtFilter->GetId());
 
-  pSizer->SetSizeHints(pPanel);
-  return pPanel;
-}
+  // directory button
+  auto pBtnDir =
+    new wxCustomButton(pPanel,
+                       wxID_ANY,
+                       wxBitmap::NewFromPNGData(
+                         folder_download_png, WXSIZEOF(folder_download_png)),
+                       wxDefaultPosition,
+                       BTNSIZE,
+                       BTNSTYLE);
+  pBtnDir->SetToolTip("select output directory");
+  pSizer->Add(pBtnDir, szrFlags);
+  Bind(wxEVT_COMMAND_BUTTON_CLICKED,
+       [=](wxCommandEvent&) {
+         wxDirDialog output(this,
+                            "select output directory",
+                            m_pOutputDir->GetValue(),
+                            wxDD_DEFAULT_STYLE);
+         if (wxID_OK == output.ShowModal())
+           m_pOutputDir->SetValue(output.GetPath());
+       },
+       pBtnDir->GetId());
 
-wxPanel* godricFrame::createToolbarRun()
-{
-  auto pPanel = new wxPanel(this, wxID_ANY);
-  auto pSizer = new wxBoxSizer(wxHORIZONTAL);
-  pPanel->SetSizer(pSizer);
-
-  const wxSize BTNSIZE(42, 42);
-  const long BTNSTYLE = wxCUSTBUT_BUTTON | wxCUSTBUT_FLAT;
-  wxSizerFlags szrFlags;
-  szrFlags.Proportion(0).Border(wxALL, 2).Center();
+  wxConfig* pCfg = reinterpret_cast<wxConfig*>(wxConfig::Get());
+  pCfg->SetPath("/Directories");
+  m_pOutputDir = new wxTextCtrl(pPanel,
+                                wxID_ANY,
+                                pCfg->Read("output", wxEmptyString),
+                                wxDefaultPosition,
+                                wxSize(250, -1),
+                                wxTE_READONLY);
+  m_pOutputDir->SetToolTip("output directory");
+  pSizer->Add(m_pOutputDir, szrFlags);
 
   // run button
   auto pBtnRun = new wxCustomButton(
@@ -406,7 +359,7 @@ wxPanel* godricFrame::createToolbarRun()
 
 void godricFrame::setStatus()
 {
-  if (!m_pBtnFilter->GetValue() || m_pAui->GetPane("outputdir").IsShown())
+  if (!m_pBtnFilter->GetValue())
   {
     GetStatusBar()->SetStatusText(wxEmptyString);
     return;
@@ -513,7 +466,7 @@ void godricFrame::execute()
 {
   namespace bfs = boost::filesystem;
   const bfs::path indir(m_pInputDir->GetPath());
-  const bfs::path outdir(m_pOutputDir->GetDirectory());
+  const bfs::path outdir(m_pOutputDir->GetValue());
   try
   {
     bfs::create_directories(outdir);
@@ -532,7 +485,6 @@ void godricFrame::execute()
     auto inputdir = m_pInputDir->GetPath();
     m_pInputDir->ReCreateTree();
     m_pInputDir->SetPath(inputdir);
-    m_pOutputDir->SetDirectory(m_pOutputDir->GetDirectory());
     populateDirectoryList();
   }
   catch (...)
