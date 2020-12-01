@@ -11,12 +11,14 @@
 #include <wx/frame.h>
 #include <wx/listbox.h>
 #include <wx/panel.h>
+#include <wx/progdlg.h>
 #include <wx/sizer.h>
 #include <wx/spinctrl.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/tglbtn.h> // for wxEVT_COMMAND_TOGGLEBUTTON_CLICKED
 #include <wx/things/toggle.h>
+#include <wx/thread.h>
 
 #include "Resources/action_run.hrc"
 #include "Resources/filter_add.hrc"
@@ -35,7 +37,7 @@ protected:
   virtual bool OnInit();
 };
 
-class godricFrame : public wxFrame
+class godricFrame : public wxFrame, public wxThreadHelper
 {
 public:
   godricFrame(wxWindow* pParent);
@@ -43,13 +45,17 @@ public:
 
 private:
   godricFrame() = delete; // No support for two-step construction
+  void onClose(wxCloseEvent& rEvent);
   void init();
   bool create();
   wxPanel* createToolbar();
   void setStatus();
   void populateDirectoryList();
   boost::filesystem::path filterFile(const boost::filesystem::path& file);
-  void execute();
+  void startWorker();
+  void startThread();
+  virtual wxThread::ExitCode Entry();
+  void onThreadUpdate(wxThreadEvent& rEvent);
 
 private:
   wxAuiManager* m_pAui;
@@ -59,6 +65,7 @@ private:
   wxCustomButton* m_pBtnFilter;
   wxSpinCtrl* m_pFieldNum;
   wxTextCtrl* m_pTxtFilter;
+  wxProgressDialog* m_pProgress;
 };
 
 /** Application instance implementation */
@@ -108,7 +115,8 @@ godricFrame::godricFrame(wxWindow* pParent)
     m_pOutputDir(nullptr),
     m_pBtnFilter(nullptr),
     m_pFieldNum(nullptr),
-    m_pTxtFilter(nullptr)
+    m_pTxtFilter(nullptr),
+    m_pProgress(nullptr)
 {
   init();
   create();
@@ -134,6 +142,12 @@ godricFrame::~godricFrame()
     m_pAui->UnInit();
     wxDELETE(m_pAui);
   }
+}
+
+void godricFrame::onClose(wxCloseEvent&)
+{
+  if (GetThread() && GetThread()->IsRunning()) GetThread()->Wait();
+  Destroy();
 }
 
 void godricFrame::init()
@@ -241,6 +255,9 @@ bool godricFrame::create()
   pCfg->SetPath("/Geometry");
   wxString perspective;
   if (pCfg->Read("auimain", &perspective)) m_pAui->LoadPerspective(perspective);
+
+  Bind(wxEVT_THREAD, &godricFrame::onThreadUpdate, this);
+  Bind(wxEVT_CLOSE_WINDOW, &godricFrame::onClose, this);
 
   populateDirectoryList();
   m_pInputDir->SetFocus();
@@ -350,7 +367,7 @@ wxPanel* godricFrame::createToolbar()
   pBtnRun->SetToolTip("run sorting");
   pSizer->Add(pBtnRun, szrFlags);
   Bind(wxEVT_COMMAND_BUTTON_CLICKED,
-       [=](wxCommandEvent&) { execute(); },
+       [=](wxCommandEvent&) { startWorker(); },
        pBtnRun->GetId());
 
   pSizer->SetSizeHints(pPanel);
@@ -372,8 +389,6 @@ void godricFrame::setStatus()
 
 void godricFrame::populateDirectoryList()
 {
-  namespace bfs = boost::filesystem;
-  const boost::filesystem::path input(m_pInputDir->GetPath());
   m_pListBox->Clear();
   GetStatusBar()->SetStatusText(wxEmptyString);
   bool filtered = m_pBtnFilter->GetValue();
@@ -381,18 +396,7 @@ void godricFrame::populateDirectoryList()
     filtered ? "input directory files (filtered)"
              : "input directory files (all, no filter)");
   m_pAui->Update();
-  try
-  {
-    for (auto& p : bfs::directory_iterator(input))
-    {
-      if (bfs::is_regular_file(p.path()) &&
-          (!filtered || (filtered && !filterFile(p.path()).empty())))
-        m_pListBox->Append(p.path().filename().string());
-    }
-  }
-  catch (...)
-  {
-  }
+  startThread();
 }
 
 int ctoi(const std::string& fmt, int offset)
@@ -462,32 +466,115 @@ boost::filesystem::path godricFrame::filterFile(
   return output;
 }
 
-void godricFrame::execute()
+void godricFrame::startWorker()
+{
+  namespace bfs = boost::filesystem;
+  const bfs::path indir(m_pInputDir->GetPath());
+  auto count = std::count_if(
+    bfs::directory_iterator(indir),
+    bfs::directory_iterator(),
+    static_cast<bool (*)(const bfs::path&)>(bfs::is_regular_file));
+
+  const bfs::path outdir(m_pOutputDir->GetValue());
+  bfs::create_directories(outdir);
+
+  m_pProgress =
+    new wxProgressDialog("progress dialog",
+                         "wait until thread terminates or press [Cancel]",
+                         count,
+                         this,
+                         wxPD_CAN_ABORT | wxPD_APP_MODAL | wxPD_ELAPSED_TIME |
+                           wxPD_ESTIMATED_TIME | wxPD_REMAINING_TIME);
+
+  startThread();
+}
+
+void godricFrame::startThread()
+{
+  if (GetThread() && GetThread()->IsRunning()) GetThread()->Wait();
+  if (wxTHREAD_NO_ERROR != CreateThread(wxTHREAD_JOINABLE))
+  {
+    wxLogError("could not create the worker thread");
+    return;
+  }
+  if (wxTHREAD_NO_ERROR != GetThread()->Run())
+  {
+    wxLogError("could not run the worker thread");
+    return;
+  }
+}
+
+wxThread::ExitCode godricFrame::Entry()
 {
   namespace bfs = boost::filesystem;
   const bfs::path indir(m_pInputDir->GetPath());
   const bfs::path outdir(m_pOutputDir->GetValue());
+  bool filtered = m_pBtnFilter->GetValue();
   try
   {
-    bfs::create_directories(outdir);
+    int i = 0;
     for (auto& p : bfs::directory_iterator(indir))
     {
       if (bfs::is_regular_file(p.path()))
       {
-        bfs::path rename = filterFile(p.path());
-        if (!rename.empty())
+        wxThreadEvent evt;
+        evt.SetString(wxEmptyString);
+        if (m_pProgress)
         {
-          bfs::create_directories(outdir / rename.parent_path());
-          bfs::rename(p.path(), outdir / rename);
+          bfs::path rename = filterFile(p.path());
+          if (!rename.empty())
+          {
+            bfs::create_directories(outdir / rename.parent_path());
+            bfs::rename(p.path(), outdir / rename);
+          }
         }
+        else if (filtered)
+        {
+          bfs::path rename = filterFile(p.path());
+          if (!rename.empty())
+          {
+            evt.SetString(p.path().filename().string());
+          }
+        }
+        else if (!filtered)
+        {
+          evt.SetString(p.path().filename().string());
+        }
+        evt.SetInt(i);
+        QueueEvent(evt.Clone());
       }
+      if ((0 == (++i) % 100) && GetThread()->TestDestroy()) break;
     }
-    auto inputdir = m_pInputDir->GetPath();
-    m_pInputDir->ReCreateTree();
-    m_pInputDir->SetPath(inputdir);
-    populateDirectoryList();
   }
   catch (...)
   {
+  }
+  wxThreadEvent evt;
+  evt.SetString(wxEmptyString);
+  evt.SetInt(-1);
+  QueueEvent(evt.Clone());
+  return (wxThread::ExitCode)0; // success
+}
+
+void godricFrame::onThreadUpdate(wxThreadEvent& rEvent)
+{
+  auto f = rEvent.GetString();
+  if (!f.IsEmpty()) m_pListBox->Append(f);
+  if (m_pProgress)
+  {
+    int n = rEvent.GetInt();
+    if (-1 == n)
+    {
+      m_pProgress->Destroy();
+      m_pProgress = nullptr;
+      wxWakeUpIdle();
+      auto inputdir = m_pInputDir->GetPath();
+      m_pInputDir->ReCreateTree();
+      m_pInputDir->SetPath(inputdir);
+      populateDirectoryList();
+    }
+    else if (!m_pProgress->Update(n))
+    {
+    }
   }
 }
