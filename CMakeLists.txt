@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.17)
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 include(preproject)
-project(godric VERSION 1.3.0.0)
+project(godric VERSION 1.4.0.0)
 set(externpro_REV 20.10.1)
 find_package(externpro REQUIRED)
 xpSetFlags()
