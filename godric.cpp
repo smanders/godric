@@ -519,13 +519,14 @@ wxThread::ExitCode godricFrame::Entry()
   bool filtered = m_pBtnFilter->GetValue();
   try
   {
-    int i = 0;
+    int num = 0;
     for (auto& p : bfs::directory_iterator(indir))
     {
       if (bfs::is_regular_file(p.path()))
       {
         wxThreadEvent evt;
         evt.SetString(wxEmptyString);
+        evt.SetInt(num);
         if (m_pProgress)
         {
           bfs::path rename = filterFile(p.path());
@@ -534,23 +535,25 @@ wxThread::ExitCode godricFrame::Entry()
             bfs::create_directories(outdir / rename.parent_path());
             bfs::rename(p.path(), outdir / rename);
           }
+          if (0 == num % 1000) QueueEvent(evt.Clone());
         }
-        else if (filtered)
+        else if (num < 150)
         {
-          bfs::path rename = filterFile(p.path());
-          if (!rename.empty())
+          if (!filtered || (filtered && !filterFile(p.path()).empty()))
           {
             evt.SetString(p.path().filename().string());
+            QueueEvent(evt.Clone());
           }
         }
-        else if (!filtered)
+        else if (150 == num)
         {
-          evt.SetString(p.path().filename().string());
+          evt.SetString("only first 150 files displayed or filtered");
+          QueueEvent(evt.Clone());
         }
-        evt.SetInt(i);
-        QueueEvent(evt.Clone());
+        else
+          break;
+        if ((0 == (++num) % 10) && GetThread()->TestDestroy()) break;
       }
-      if ((0 == (++i) % 100) && GetThread()->TestDestroy()) break;
     }
   }
   catch (...)
