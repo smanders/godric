@@ -310,7 +310,9 @@ wxPanel* godricFrame::createToolbar()
     "number of fields (separated by delimiters) in filenames");
   pSizer->Add(m_pFieldNum, szrFlags);
   Bind(wxEVT_SPINCTRL,
-       [=](wxSpinEvent&) { populateDirectoryList(); },
+       [=](wxSpinEvent&) {
+         if (m_pBtnFilter->GetValue()) populateDirectoryList();
+       },
        m_pFieldNum->GetId());
 
   // filter string
