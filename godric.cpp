@@ -381,13 +381,16 @@ void godricFrame::setStatus()
 {
   if (!m_pBtnFilter->GetValue())
   {
-    GetStatusBar()->SetStatusText(wxEmptyString);
+    GetStatusBar()->SetStatusText("no filter on selected file");
     return;
   }
   boost::filesystem::path file(
     m_pListBox->GetString(m_pListBox->GetSelection()));
   file = filterFile(file);
-  if (!file.empty()) GetStatusBar()->SetStatusText(file.string());
+  if (!file.empty())
+    GetStatusBar()->SetStatusText(file.string());
+  else
+    GetStatusBar()->SetStatusText("filter error");
 }
 
 void godricFrame::populateDirectoryList()
