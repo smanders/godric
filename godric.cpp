@@ -56,6 +56,7 @@ private:
   void startThread();
   virtual wxThread::ExitCode Entry();
   void onThreadUpdate(wxThreadEvent& rEvent);
+  void endWorker();
 
 private:
   wxAuiManager* m_pAui;
@@ -560,21 +561,15 @@ void godricFrame::onThreadUpdate(wxThreadEvent& rEvent)
 {
   auto f = rEvent.GetString();
   if (!f.IsEmpty()) m_pListBox->Append(f);
-  if (m_pProgress)
-  {
-    int n = rEvent.GetInt();
-    if (-1 == n)
-    {
-      m_pProgress->Destroy();
-      m_pProgress = nullptr;
-      wxWakeUpIdle();
-      auto inputdir = m_pInputDir->GetPath();
-      m_pInputDir->ReCreateTree();
-      m_pInputDir->SetPath(inputdir);
-      populateDirectoryList();
-    }
-    else if (!m_pProgress->Update(n))
-    {
-    }
-  }
+  int num = rEvent.GetInt();
+  if (-1 == num && GetThread() && GetThread()->IsRunning()) GetThread()->Wait();
+  if (m_pProgress && (-1 == num || !m_pProgress->Update(num))) endWorker();
+}
+
+void godricFrame::endWorker()
+{
+  m_pProgress->Destroy();
+  m_pProgress = nullptr;
+  if (GetThread() && GetThread()->IsRunning()) GetThread()->Wait();
+  m_pInputDir->ReCreateTree();
 }
