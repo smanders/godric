@@ -474,23 +474,24 @@ boost::filesystem::path godricFrame::filterFile(
 
 void godricFrame::startWorker()
 {
+  m_pProgress =
+    new wxProgressDialog("sorting progress",
+                         "wait until complete or press [Cancel]",
+                         100,
+                         this,
+                         wxPD_CAN_ABORT | wxPD_APP_MODAL | wxPD_ELAPSED_TIME |
+                           wxPD_ESTIMATED_TIME | wxPD_REMAINING_TIME);
+
   namespace bfs = boost::filesystem;
   const bfs::path indir(m_pInputDir->GetPath());
   auto count = std::count_if(
     bfs::directory_iterator(indir),
     bfs::directory_iterator(),
     static_cast<bool (*)(const bfs::path&)>(bfs::is_regular_file));
+  m_pProgress->SetRange(count);
 
   const bfs::path outdir(m_pOutputDir->GetValue());
   bfs::create_directories(outdir);
-
-  m_pProgress =
-    new wxProgressDialog("progress dialog",
-                         "wait until thread terminates or press [Cancel]",
-                         count,
-                         this,
-                         wxPD_CAN_ABORT | wxPD_APP_MODAL | wxPD_ELAPSED_TIME |
-                           wxPD_ESTIMATED_TIME | wxPD_REMAINING_TIME);
 
   startThread();
 }
