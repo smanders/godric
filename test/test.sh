@@ -38,7 +38,7 @@ until [ $names -lt 1 ]; do
     until [ $year -gt 2019 ]; do
       f2="${year}_${year}"
       for f3 in "${field3[@]}"; do
-        touch "${f0}${f1}${f2}${f3}"
+        touch "${f0}${f1}${f2}${f3}.pdf"
       done
       ((year++))
     done
