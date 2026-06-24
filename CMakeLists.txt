@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.17)
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
-include(preproject)
 project(godric VERSION 1.4.0.0)
-set(externpro_REV 20.10.1)
-find_package(externpro REQUIRED)
 xpSetFlags()
 xpFindPkg(PKGS boost wxwidgets wxx)
 ##########
@@ -31,6 +27,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}) 
 target_link_libraries(${PROJECT_NAME} PRIVATE Boost::filesystem wx::aui wxx::things)
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 ##########
-xpSourceDirIgnore(cmake)
 xpSourceDirIgnore(test)
 xpSourceListAppend("${${PROJECT_NAME}_srcs}")
