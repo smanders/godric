@@ -17,12 +17,15 @@ jobs:
     uses: externpro/externpro/.github/workflows/build-linux.yml@26.01.2
     secrets:
       automation_token: ${{ secrets.GHCR_TOKEN }}
-    with: {}
+    with:
+      cmake_workflow_preset_suffix: Release
   macos:
     uses: externpro/externpro/.github/workflows/build-macos.yml@26.01.2
     secrets: inherit
-    with: {}
+    with:
+      cmake_workflow_preset_suffix: Release
   windows:
     uses: externpro/externpro/.github/workflows/build-windows.yml@26.01.2
     secrets: inherit
-    with: {}
+    with:
+      cmake_workflow_preset_suffix: Release
